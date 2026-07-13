@@ -3,8 +3,9 @@ import React from "react";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createNote } from "../../lib/api";
+import { createNote, CreateNotePayload } from "../../lib/api";
 import css from "./NoteForm.module.css";
+import { Note } from "../../types/note";
 
 const NoteSchema = Yup.object().shape({
   title: Yup.string()
@@ -22,7 +23,7 @@ const NoteSchema = Yup.object().shape({
 
 export const NoteForm: React.FC<{ onCancel: () => void }> = ({ onCancel }) => {
   const queryClient = useQueryClient();
-  const createMutation = useMutation({
+  const createMutation = useMutation<Note, Error, CreateNotePayload>({
     mutationFn: createNote,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notes"] });

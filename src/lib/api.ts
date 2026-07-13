@@ -25,8 +25,11 @@ export interface FetchNotesResponse {
   totalPages: number;
 }
 
-export type CreateNotePayload = Omit<Note, "id">;
-
+export interface CreateNotePayload {
+  title: string;
+  content: string;
+  tag: string;
+}
 // --- Функції запитів (Зверніть увагою на відносні шляхи) ---
 
 export const fetchNotes = async (
