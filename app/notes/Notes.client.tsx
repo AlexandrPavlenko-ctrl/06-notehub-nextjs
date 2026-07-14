@@ -9,7 +9,7 @@ import { fetchNotes } from "../../lib/api";
 import { SearchBox } from "../../components/SearchBox/SearchBox";
 import { Pagination } from "../../components/Pagination/Pagination";
 import { NoteList } from "../../components/NoteList/NoteList";
-import { NoteForm } from "../../components/NoteForm/NoteForm";
+import NoteForm from "../../components/NoteForm/NoteForm";
 
 import css from "./NotesPage.module.css"; // Шлях до робочих стилів
 
