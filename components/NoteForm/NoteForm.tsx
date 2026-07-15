@@ -3,64 +3,70 @@ import { Formik, Form, Field, ErrorMessage, FormikHelpers } from "formik";
 import * as Yup from "yup";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-// 1. Інтерфейс для пропсів компонента
+// 1. Масив дозволених тегів для валідації та рендерингу
+const ALLOWED_TAGS = [
+  "Todo",
+  "Work",
+  "Personal",
+  "Meeting",
+  "Shopping",
+] as const;
+type AllowedTag = (typeof ALLOWED_TAGS)[number];
+
+// 2. Інтерфейси для пропсів та значень форми
 interface NoteFormProps {
   onCancel: () => void;
 }
 
-// 2. Інтерфейс для значень форми (сувора типізація Formik)
 interface NoteFormValues {
   title: string;
   content: string;
-  tag: string;
+  tag: AllowedTag | "";
 }
 
-// 3. Yup-схема валідації
+// 3. Виправлена Yup-схема валідації (англійською мовою)
 const NoteValidationSchema = Yup.object().shape({
   title: Yup.string()
-    .min(3, "Заголовок має бути не менше 3 символів")
-    .required("Заголовок є обов’язковим"),
+    .min(3, "Title must be at least 3 characters")
+    .required("Title is required"),
   content: Yup.string()
-    .min(10, "Текст має бути не менше 10 символів")
-    .required("Текст нотатки є обов’язковим"),
-  tag: Yup.string().required("Будь ласка, оберіть тег"),
+    .max(500, "Content cannot exceed 500 characters")
+    .notRequired(), // Поле є необов'язковим
+  tag: Yup.string()
+    .oneOf([...ALLOWED_TAGS], "Invalid tag selection") // Обмеження лише дозволеними тегами
+    .required("Tag is required"),
 });
 
-// Імітація API-функції для створення нотатки (замініть на ваш реальний axios/fetch запит)
+// Імітація API-функції (замініть на ваш реальний запит)
 const createNoteApi = async (newNote: NoteFormValues): Promise<void> => {
   const response = await fetch("/api/notes", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(newNote),
   });
-  if (!response.ok) throw new Error("Помилка при створенні нотатки");
+  if (!response.ok) throw new Error("Failed to create note");
 };
 
 export const NoteForm: React.FC<NoteFormProps> = ({ onCancel }) => {
   const queryClient = useQueryClient();
 
-  // 4. Mutation з TanStack Query для створення нотатки
   const { mutate, isPending } = useMutation({
     mutationFn: createNoteApi,
     onSuccess: () => {
-      // Інвалідація запиту нотаток для оновлення списку
       queryClient.invalidateQueries({ queryKey: ["notes"] });
-      // Закриття форми після успішної відправки
       onCancel();
     },
     onError: (error: Error) => {
-      alert(`Не вдалося зберегти: ${error.message}`);
+      alert(`Error saving note: ${error.message}`);
     },
   });
 
-  // Початкові значення форми
   const initialValues: NoteFormValues = {
     title: "",
     content: "",
     tag: "",
   };
 
-  // Обробник відправки форми
   const handleSubmit = (
     values: NoteFormValues,
     { setSubmitting }: FormikHelpers<NoteFormValues>,
@@ -78,16 +84,16 @@ export const NoteForm: React.FC<NoteFormProps> = ({ onCancel }) => {
     >
       {({ isSubmitting }) => (
         <Form className="note-form">
-          <h3>Створити нотатку</h3>
+          <h3>Create Note</h3>
 
-          {/* Поле Title */}
+          {/* Title Field */}
           <div className="form-group">
-            <label htmlFor="title">Заголовок</label>
+            <label htmlFor="title">Title</label>
             <Field
               id="title"
               name="title"
               type="text"
-              placeholder="Введіть заголовок"
+              placeholder="Enter title"
             />
             <ErrorMessage
               name="title"
@@ -96,14 +102,14 @@ export const NoteForm: React.FC<NoteFormProps> = ({ onCancel }) => {
             />
           </div>
 
-          {/* Поле Content */}
+          {/* Content Field */}
           <div className="form-group">
-            <label htmlFor="content">Текст нотатки</label>
+            <label htmlFor="content">Content</label>
             <Field
               id="content"
               name="content"
               as="textarea"
-              placeholder="Введіть текст нотатки"
+              placeholder="Enter content (optional)"
             />
             <ErrorMessage
               name="content"
@@ -112,16 +118,18 @@ export const NoteForm: React.FC<NoteFormProps> = ({ onCancel }) => {
             />
           </div>
 
-          {/* Випадаючий список для Tag */}
+          {/* Tag Field (з правильним регістром та опціями) */}
           <div className="form-group">
-            <label htmlFor="tag">Тег</label>
+            <label htmlFor="tag">Tag</label>
             <Field id="tag" name="tag" as="select">
               <option value="" disabled>
-                Оберіть тег
+                Select a tag
               </option>
-              <option value="work">Робота</option>
-              <option value="personal">Особисте</option>
-              <option value="ideas">Ідеї</option>
+              {ALLOWED_TAGS.map((tag) => (
+                <option key={tag} value={tag}>
+                  {tag}
+                </option>
+              ))}
             </Field>
             <ErrorMessage
               name="tag"
@@ -130,17 +138,17 @@ export const NoteForm: React.FC<NoteFormProps> = ({ onCancel }) => {
             />
           </div>
 
-          {/* Кнопки дій */}
+          {/* Actions */}
           <div className="form-actions">
             <button
               type="button"
               onClick={onCancel}
               disabled={isSubmitting || isPending}
             >
-              Скасувати
+              Cancel
             </button>
             <button type="submit" disabled={isSubmitting || isPending}>
-              {isPending ? "Збереження..." : "Зберегти"}
+              {isPending ? "Saving..." : "Save"}
             </button>
           </div>
         </Form>
