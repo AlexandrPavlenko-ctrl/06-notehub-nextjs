@@ -3,6 +3,7 @@ import { Formik, Form, Field, ErrorMessage, FormikHelpers } from "formik";
 import * as Yup from "yup";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
+// 1. Дозволені теги (строго за ТЗ)
 const ALLOWED_TAGS = [
   "Todo",
   "Work",
@@ -12,9 +13,9 @@ const ALLOWED_TAGS = [
 ] as const;
 type AllowedTag = (typeof ALLOWED_TAGS)[number];
 
+// 2. Оновлений інтерфейс пропсів (видалено onCreateTag)
 interface NoteFormProps {
   onCancel: () => void;
-  onCreateTag?: () => void; // Додано проп для створення тегу, якщо він потрібен
 }
 
 interface NoteFormValues {
@@ -23,6 +24,7 @@ interface NoteFormValues {
   tag: AllowedTag | "";
 }
 
+// 3. Yup-схема валідації (англійською мовою)
 const NoteValidationSchema = Yup.object().shape({
   title: Yup.string()
     .min(3, "Title must be at least 3 characters")
@@ -35,6 +37,7 @@ const NoteValidationSchema = Yup.object().shape({
     .required("Tag is required"),
 });
 
+// Імітація вашого API-запиту
 const createNoteApi = async (newNote: NoteFormValues): Promise<void> => {
   const response = await fetch("/api/notes", {
     method: "POST",
@@ -44,10 +47,7 @@ const createNoteApi = async (newNote: NoteFormValues): Promise<void> => {
   if (!response.ok) throw new Error("Failed to create note");
 };
 
-export const NoteForm: React.FC<NoteFormProps> = ({
-  onCancel,
-  onCreateTag,
-}) => {
+export const NoteForm: React.FC<NoteFormProps> = ({ onCancel }) => {
   const queryClient = useQueryClient();
 
   const { mutate, isPending } = useMutation({
@@ -86,7 +86,7 @@ export const NoteForm: React.FC<NoteFormProps> = ({
         <Form className="note-form">
           <h3>Create Note</h3>
 
-          {/* Title Field */}
+          {/* Title */}
           <div className="form-group">
             <label htmlFor="title">Title</label>
             <Field
@@ -102,7 +102,7 @@ export const NoteForm: React.FC<NoteFormProps> = ({
             />
           </div>
 
-          {/* Content Field */}
+          {/* Content */}
           <div className="form-group">
             <label htmlFor="content">Content</label>
             <Field
@@ -118,34 +118,19 @@ export const NoteForm: React.FC<NoteFormProps> = ({
             />
           </div>
 
-          {/* Tag Field БЛОК С КНОПКОЙ */}
+          {/* Tag Dropdown (ЧИСТИЙ СЕЛЕКТ, БЕЗ КНОПКИ) */}
           <div className="form-group">
             <label htmlFor="tag">Tag</label>
-            {/* Контейнер-обгортка для флекс-сітки (селект + кнопка) */}
-            <div
-              className="tag-field-container"
-              style={{ display: "flex", gap: "8px" }}
-            >
-              <Field id="tag" name="tag" as="select" style={{ flex: 1 }}>
-                <option value="" disabled>
-                  Select a tag
+            <Field id="tag" name="tag" as="select">
+              <option value="" disabled>
+                Select a tag
+              </option>
+              {ALLOWED_TAGS.map((tag) => (
+                <option key={tag} value={tag}>
+                  {tag}
                 </option>
-                {ALLOWED_TAGS.map((tag) => (
-                  <option key={tag} value={tag}>
-                    {tag}
-                  </option>
-                ))}
-              </Field>
-
-              {/* ПОВЕРНУТО КНОПКУ CREATE TAG */}
-              <button
-                type="button"
-                className="create-tag-btn"
-                onClick={onCreateTag}
-              >
-                Create Tag
-              </button>
-            </div>
+              ))}
+            </Field>
             <ErrorMessage
               name="tag"
               component="div"
